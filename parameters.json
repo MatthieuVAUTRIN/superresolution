@@ -29,6 +29,6 @@
     ],
     "simulation": {
       "total_depth": 2e-2,
-      "lateral_resolution": 2048
+      "lateral_resolution": 1024
     }
 }
