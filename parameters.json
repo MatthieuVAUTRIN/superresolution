@@ -1,0 +1,34 @@
+{
+    "array": {
+      "length": 128,
+      "aperture": 0.8,
+      "pitch": 1e-4
+    },
+    "wave": {
+      "frequency": 1.5e7,
+      "c": 1500,
+      "sampling_rate": 2.4e8
+    },
+    "objects": [
+      {
+        "depth": 3e-3,
+        "position": 7e-3
+      },
+      {
+        "depth": 4e-3,
+        "position": 8e-3
+      },
+      {
+        "depth": 3.1e-3,
+        "position": 7.5e-3
+      },
+      {
+        "depth": 9e-3,
+        "position": 5e-3
+      }
+    ],
+    "simulation": {
+      "total_depth": 2e-2,
+      "lateral_resolution": 1024
+    }
+}
