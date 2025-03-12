@@ -11,10 +11,6 @@
     },
     "objects": [
       {
-        "depth": 3e-3,
-        "position": 7e-3
-      },
-      {
         "depth": 4e-3,
         "position": 8e-3
       },
@@ -29,6 +25,6 @@
     ],
     "simulation": {
       "total_depth": 2e-2,
-      "lateral_resolution": 1024
+      "lateral_resolution": 512
     }
 }
