@@ -1,1 +1,3 @@
 https://github.com/fchirono/BeamformingBasics/blob/main/README.md
+
+https://tomroelandts.com/articles/what-is-an-analytic-signal - analytical signal
