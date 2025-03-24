@@ -8,20 +8,12 @@
       "frequency": 1.5625e7,
       "c": 1500,
       "sampling_rate": 6.25e7,
-      "angles": [-15, -6, -3, 0, 3, 6, 15]
+      "angles": [0]
     },
     "objects": [
       {
         "depth": 4e-3,
-        "position": 8e-3
-      },
-      {
-        "depth": 3.1e-3,
-        "position": 7.5e-3
-      },
-      {
-        "depth": 8e-3,
-        "position": 5e-3
+        "position": 4.572e-3
       }
     ],
     "simulation": {
