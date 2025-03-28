@@ -18,7 +18,8 @@
         "dx": 0.00001125,
         "dz": 0.00001125,
         "nx": null,
-        "nz": null
+        "nz": null,
+        "nframes": 1
     },
     "objects": {
         
