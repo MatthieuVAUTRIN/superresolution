@@ -9,7 +9,7 @@
         "samples": 834,
         "sampling_rate": 6.25e7,
         "angles": [-9.000000,-6.000000,-3.000000,0.000000,3.000000,6.000000,9.000000],
-        "delay0": 4e-6,
+        "delay0": 45,
         "interpolation_factor": 4
     },
     "image": {
@@ -19,7 +19,7 @@
         "dz": 0.00001125,
         "nx": null,
         "nz": null,
-        "nframes": 20
+        "nframes": 10
     },
     "objects": {
         
