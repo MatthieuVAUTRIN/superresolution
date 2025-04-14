@@ -8,6 +8,7 @@
         "frequency": 1.5625e7,
         "samples": 834,
         "sampling_rate": 6.25e7,
+        "C": 1500,
         "angles": [-9.000000,-6.000000,-3.000000,0.000000,3.000000,6.000000,9.000000],
         "delay0": 0,
         "interpolation_factor": 4
