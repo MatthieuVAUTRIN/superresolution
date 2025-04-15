@@ -1,0 +1,62 @@
+%matlab code that call function and save the parameters
+function [] = extractParams()
+
+    % params
+
+    funcPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data/002_real_hair/";
+    rfMatPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data/002_real_hair/0005_RF.mat";
+
+    jsonOutputPath = "/home/matmat/Documents/urban_lab/002_Superresolution/superresolution/data_bf/hair_data/0005_params.json";
+
+    addpath(funcPath);
+
+    rfMat = load(rfMatPath);
+
+    params = param_0005();
+
+    % disp(params.bmode);
+    % disp(params.acq);
+    % disp(params.hard);
+    % disp(params.probe);
+    % disp(params.bf);
+    % disp(params.filter);
+
+    array = struct();
+
+    array.length = params.probe.nx;
+    array.aperture = params.bf.fd;
+    array.pitch = params.probe.dx * 10^-3;
+
+    disp(array)
+
+    rf = struct();
+
+    rf.frequency = params.acq.freqTX * 10^6;
+    rf.samples = size(rfMat.RF, 1);
+    rf.sampling_rate = params.acq.samplesPerWave * rf.frequency;
+    rf.C = params.acq.c * 10^3;
+    rf.angles = params.bmode.anglex;
+    rf.delay0 = params.acq.z(1) * 10^-3;
+    rf.interpolation_factor = 2;
+
+    disp(rf)
+
+    image = struct();
+
+    image.x0 = params.bf.x0 * 10^-3;
+    image.z0 = rf.delay0;    %in m
+    image.dx = params.bf.dx * 10^-3;
+    image.dz = params.bf.dz * 10^-3;
+    image.nx = params.bf.nx;
+    image.nz = round(((params.acq.z(2) * 10^-3) - (params.acq.z(1) * 10^-3)) / image.dz);
+    image.nframes = 1;
+
+    disp(image)
+
+    encoded = jsonencode(struct('array', array, 'rf', rf, 'image', image));
+
+    fid = fopen(jsonOutputPath,'w');
+    fprintf(fid,'%s',encoded);
+    fclose(fid);
+
+end
