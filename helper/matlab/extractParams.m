@@ -3,16 +3,17 @@ function [] = extractParams()
 
     % params
 
-    funcPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data/002_real_hair/";
-    rfMatPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data/002_real_hair/0005_RF.mat";
+    funcPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/002_real_hair/";
+    rfMatPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/002_real_hair/0003_RF.mat";
 
-    jsonOutputPath = "/home/matmat/Documents/urban_lab/002_Superresolution/superresolution/data_bf/hair_data/0005_params.json";
+    jsonOutputPath = "/home/matmat/Documents/urban_lab/002_Superresolution/superresolution/data_bf/hair_data/0003_params.json";
 
     addpath(funcPath);
 
     rfMat = load(rfMatPath);
+    rfMatField = fieldnames(rfMat);
 
-    params = param_0005();
+    params = param_0003();
 
     % disp(params.bmode);
     % disp(params.acq);
@@ -32,7 +33,7 @@ function [] = extractParams()
     rf = struct();
 
     rf.frequency = params.acq.freqTX * 10^6;
-    rf.samples = size(rfMat.RF, 1);
+    rf.samples = size(rfMat.(rfMatField{1}), 1); 
     rf.sampling_rate = params.acq.samplesPerWave * rf.frequency;
     rf.C = params.acq.c * 10^3;
     rf.angles = params.bmode.anglex;
