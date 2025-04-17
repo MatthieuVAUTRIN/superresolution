@@ -2,7 +2,8 @@
     "array": {
       "length": 128,
       "aperture": 0.8,
-      "pitch": 9e-5
+      "pitch": 9e-5,
+      "acq_depth": [0, 10e-3]
     },
     "rf": {
         "frequency": 1.5625e7,

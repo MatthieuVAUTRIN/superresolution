@@ -3,17 +3,17 @@ function [] = extractParams()
 
     % params
 
-    funcPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/002_real_hair/";
-    rfMatPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/002_real_hair/0003_RF.mat";
+    funcPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/005_mouse/";
+    rfMatPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/005_mouse/001_RF.mat";
 
-    jsonOutputPath = "/home/matmat/Documents/urban_lab/002_Superresolution/superresolution/data_bf/hair_data/0003_params.json";
+    jsonOutputPath = "/home/matmat/Documents/urban_lab/002_Superresolution/superresolution/data_bf/mouse/params.json";
 
     addpath(funcPath);
 
     rfMat = load(rfMatPath);
     rfMatField = fieldnames(rfMat);
 
-    params = param_0003();
+    params = Copy_of_paramLinear15M_Dax();
 
     % disp(params.bmode);
     % disp(params.acq);
@@ -27,6 +27,7 @@ function [] = extractParams()
     array.length = params.probe.nx;
     array.aperture = params.bf.fd;
     array.pitch = params.probe.dx * 10^-3;
+    array.acq_depth = [params.acq.z(1) * 10^-3, params.acq.z(2) * 10^-3];
 
     disp(array)
 
