@@ -1,6 +1,6 @@
 %exampleLoadRF
-savePath = '/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/004_pig/';
-folderRaw='/home/matmat/Documents/urban_lab/002_Superresolution/raw_data/matthieu/rawdata/';
+savePath = '/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/';
+folderRaw='/home/matmat/Documents/urban_lab/002_Superresolution/raw_data/acquisitionLong/beginning/';
 
 dirData = dir([folderRaw, '/*.dat']);
 

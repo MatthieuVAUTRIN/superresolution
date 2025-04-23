@@ -2,18 +2,20 @@
 function [] = extractParams()
 
     % params
+    %imaging_mode = 'bmode';
+    imaging_mode = 'doppler';
 
-    funcPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/005_mouse/";
-    rfMatPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/005_mouse/001_RF.mat";
+    funcPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/";
+    rfMatPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0001.mat";
 
-    jsonOutputPath = "/home/matmat/Documents/urban_lab/002_Superresolution/superresolution/data_bf/mouse/params.json";
+    jsonOutputPath = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/params.json";
 
     addpath(funcPath);
 
     rfMat = load(rfMatPath);
     rfMatField = fieldnames(rfMat);
 
-    params = Copy_of_paramLinear15M_Dax();
+    params = paramLinear15M_Dax();
 
     % disp(params.bmode);
     % disp(params.acq);
@@ -37,6 +39,11 @@ function [] = extractParams()
     rf.samples = size(rfMat.(rfMatField{1}), 1); 
     rf.sampling_rate = params.acq.samplesPerWave * rf.frequency;
     rf.C = params.acq.c * 10^3;
+    if strcmp(imaging_mode, 'bmode')
+        rf.angles = params.bmode.anglex;
+    elseif strcmp(imaging_mode, 'doppler')
+        rf.angles = params.doppler.anglex;
+    end
     rf.angles = params.bmode.anglex;
     rf.delay0 = params.acq.z(1) * 10^-3;
     rf.interpolation_factor = 2;
