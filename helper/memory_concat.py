@@ -61,17 +61,17 @@ if __name__ == "__main__":
     path_list = [
         "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0001.mat",
         "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0002.mat",
-        # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0003.mat",
-        # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0004.mat",
-        # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0005.mat",
-        # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0006.mat",
-        # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0007.mat",
-        # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0008.mat",
+        "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0003.mat",
+        "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0004.mat",
+        "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0005.mat",
+        "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0006.mat",
+        "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0007.mat",
+        "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0008.mat",
         # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0009.mat",
         # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0010.mat",
         # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0011.mat",
     ]
-    output_matrix_name = "0320_concat_matrix_test"
+    output_matrix_name = "1280_concat_IQ_rf"
     output_folder = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/concat/"
 
     output_path = os.path.join(output_folder, output_matrix_name)
