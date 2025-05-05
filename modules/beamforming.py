@@ -105,6 +105,7 @@ class Beamforming(Beamformer):
             if self.using_matlab_data:
                 rf_matrix_summed = loadmat(self.rf_matrix_path)
                 rf_matrix_summed = list(rf_matrix_summed.values())[-1]
+
                 if rf_matrix_summed.ndim == 3:
                     rf_matrix_summed = rf_matrix_summed[:, :, :, np.newaxis]
                 rf_matrix_summed = rf_matrix_summed[
@@ -118,6 +119,7 @@ class Beamforming(Beamformer):
                 rf_matrix_summed = np.lib.format.open_memmap(
                     self.rf_matrix_path, mode="r"
                 )
+
                 rf_matrix_summed = rf_matrix_summed[
                     :, :, :, desired_frames[0] : desired_frames[1]
                 ]
