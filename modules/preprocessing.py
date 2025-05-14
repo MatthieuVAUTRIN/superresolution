@@ -99,11 +99,7 @@ class Preprocessing:
         return rf_dtype, samples, sampling_rate
 
     def process_batch_multiprocessing(
-        self,
-        batch_idx,
-        start_frame,
-        current_batch_size,
-        frame_iterations,
+        self, batch_idx, start_frame, current_batch_size, frame_iterations, cuda
     ):
         """
         Processes a single batch of RF data frames in a separate process.

@@ -20,7 +20,7 @@ class MultiprocessingHandler:
         self.frames_to_process = frames_to_process
         self.batch_size = batch_size
 
-    def run_multiprocessing(self, func, cuda):
+    def run_multiprocessing(self, func, cuda=False):
 
         if cuda:
             WORKERS = min(self.MAX_WORKERS, 1)
