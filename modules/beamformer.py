@@ -6,8 +6,6 @@ import math
 import numpy as np
 import numpy as np
 from numba import njit
-from numba.experimental import jitclass
-from numba.types import float32, int32, boolean, ListType, unicode_type
 
 
 @njit()
@@ -177,7 +175,7 @@ class Beamformer:
 
     @staticmethod
     @njit(parallel=True)
-    def __beamforming_opt(
+    def _beamforming_opt(
         rf,
         nx,
         nz,
@@ -320,7 +318,7 @@ class Beamformer:
         return bf
 
     def beamforming(self, rf, frames, apodization_function):
-        return self.__beamforming_opt(
+        return self._beamforming_opt(
             rf,
             self.nx,
             self.nz,

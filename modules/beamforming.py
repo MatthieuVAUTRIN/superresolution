@@ -13,10 +13,11 @@ from scipy import fft
 from scipy.io import loadmat
 
 from modules.beamformer import Beamformer
+from modules.beamformer_gpu import BeamformerGPU
 from modules.multiprocessing import MultiprocessingHandler
 
 
-class Beamforming(Beamformer):
+class Beamforming(Beamformer, BeamformerGPU):
 
     def __init__(
         self,
@@ -79,15 +80,27 @@ class Beamforming(Beamformer):
             self.apodization_functions,
         ) = self._init_beamforming()
 
-        super().__init__(
-            nsi_dc_offset,
-            params,
-            self.sampling_rate,
-            self.samples,
-            not using_simulation_data,
-            interpolate_data,
-            self.bf_dtype,
-            debug,
+        Beamformer.__init__(
+            self,
+            nsi_dc_offset=nsi_dc_offset,
+            params=params,
+            sampling_rate=self.sampling_rate,
+            samples=self.samples,
+            using_real_data=not self.using_simulation_data,
+            interpolate_data=interpolate_data,
+            bf_dtype=self.bf_dtype,
+            debug=debug,
+        )
+        BeamformerGPU.__init__(
+            self,
+            nsi_dc_offset=nsi_dc_offset,
+            params=params,
+            sampling_rate=self.sampling_rate,
+            samples=self.samples,
+            using_real_data=not self.using_simulation_data,
+            interpolate_data=interpolate_data,
+            bf_dtype=self.bf_dtype,
+            debug=debug,
         )
 
     def __get_samples_depth_lateral_resolution(
@@ -173,11 +186,7 @@ class Beamforming(Beamformer):
         )
 
     def process_batch_multiprocessing(
-        self,
-        batch_idx,
-        start_frame,
-        current_batch_size,
-        frame_iterations,
+        self, batch_idx, start_frame, current_batch_size, frame_iterations, cuda
     ):
         """
         Processes a single batch of RF data frames in a separate process.
@@ -189,7 +198,7 @@ class Beamforming(Beamformer):
 
             # Load rf data for the current batch
 
-            rf_matrix_summed, debug_statement = self.mp_handler.load_rf_data(
+            rf_matrix, debug_statement = self.mp_handler.load_rf_data(
                 self.rf_matrix_path,
                 [start_frame, start_frame + current_batch_size],
                 self.using_simulation_data,
@@ -205,7 +214,7 @@ class Beamforming(Beamformer):
                 f"\n{'='*60}\n"
             )
 
-            actual_loaded_frames = rf_matrix_summed.shape[3]
+            actual_loaded_frames = rf_matrix.shape[3]
 
             if actual_loaded_frames != current_batch_size:
                 print(
@@ -217,9 +226,15 @@ class Beamforming(Beamformer):
             bf_matrices = []
 
             for apo_func in self.apodization_functions:
-                bf_apodized_matrix = super().beamforming(
-                    rf_matrix_summed, actual_loaded_frames, apo_func
-                )
+                if cuda:
+                    rf_matrix = rf_matrix.copy()
+                    bf_apodized_matrix = self.beamforming_gpu(
+                        rf_matrix, actual_loaded_frames, apo_func
+                    )
+                else:
+                    bf_apodized_matrix = self.beamforming(
+                        rf_matrix, actual_loaded_frames, apo_func
+                    )
                 bf_matrices.append(bf_apodized_matrix)
 
             if self.angles_debug and not self.run_nsi_apodization:
@@ -264,7 +279,7 @@ class Beamforming(Beamformer):
 
             del bf_apodized_matrices_summed
             del bf_matrices
-            del rf_matrix_summed
+            del rf_matrix
 
             print(
                 "=" * 60
@@ -284,5 +299,5 @@ class Beamforming(Beamformer):
             traceback.print_exc()
             return (batch_idx, False)
 
-    def run_beamforming(self):
-        self.mp_handler.run_multiprocessing(self.process_batch_multiprocessing)
+    def run_beamforming(self, cuda=False):
+        self.mp_handler.run_multiprocessing(self.process_batch_multiprocessing, cuda)

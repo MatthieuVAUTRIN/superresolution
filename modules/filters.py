@@ -3,11 +3,14 @@ import numpy as np
 from scipy import ndimage
 
 
-def filter_hp(bf, fsam, f, nrebound):
+def filter_hp(bf, fsam, f, nrebound, fixed=0):
     # subtract continuous componen
     # bf = bf - np.mean(bf, axis=2, keepdims=True)
     # butterworth high-pass filter
-    b, a = butter(3, f * 0.6, "highpass", output="ba", fs=fsam)
+    if fixed == 0:
+        b, a = butter(3, f * 0.6, "highpass", output="ba", fs=fsam)
+    else:
+        b, a = butter(3, fixed, "highpass", output="ba", fs=fsam)
     # apply filter along the time dimension
     bff = lfilter(b, a, bf, axis=2)
     # the first nelim images are eliminated because the filter border effect
@@ -91,6 +94,9 @@ def get_noise_profile(bf):
             noise_field_smooth  # noise_field_smooth_norm
         )
 
+    eps = np.finfo(float).eps  # avoid division by zero
+    noise_field_smooth_image = np.maximum(noise_field_smooth_image, eps)
+
     return noise_field_smooth_image
 
 
@@ -100,7 +106,7 @@ def filter_hp_svd(bf, fsam, f, nelim):
     return bff, S
 
 
-def __calculate_axis_doppler_power(time_signal, sampling_rate, use_nsi):
+def _calculate_axis_doppler_power(time_signal, sampling_rate, use_nsi):
 
     n = len(time_signal)
     time_signal_fft = np.fft.fft(time_signal)
@@ -112,13 +118,9 @@ def __calculate_axis_doppler_power(time_signal, sampling_rate, use_nsi):
     negative_freq_mask = freq_f < 0
 
     if use_nsi:
-        # pos_flow = np.sum(envelope(esd[positive_freq_mask], residual=None))
-        # neg_flow = np.sum(envelope(esd[negative_freq_mask], residual=None))
         pos_flow = envelope(esd[positive_freq_mask], residual=None)
         neg_flow = envelope(esd[negative_freq_mask], residual=None)
     else:
-        # pos_flow = np.sum(esd[positive_freq_mask])
-        # neg_flow = np.sum(esd[negative_freq_mask])
         pos_flow = esd[positive_freq_mask]
         neg_flow = esd[negative_freq_mask]
 
@@ -137,7 +139,7 @@ def get_doppler_flow_images(rf_matrix, sampling_rate, nsi: bool = False):
         for j in range(num_lateral):  # lateral
 
             time_signal = rf_matrix[i, j, :]
-            pos_flow, neg_flow = __calculate_axis_doppler_power(
+            pos_flow, neg_flow = _calculate_axis_doppler_power(
                 time_signal, sampling_rate, use_nsi=nsi
             )
 
@@ -150,14 +152,14 @@ def get_doppler_flow_images(rf_matrix, sampling_rate, nsi: bool = False):
 
 
 # phase difference for non nsi images
-def filter_movement(rf_data, frames, direction="up"):
+def filter_movement(rf_data, direction="up"):
     filtered_rf_data = np.zeros_like(rf_data, dtype=np.complex64)
 
     instantaneous_phase = np.angle(rf_data)
 
     for i in range(0, rf_data.shape[1]):  # tranducers
         for j in range(0, rf_data.shape[0]):  # samples depth
-            for k in range(1, frames):  # frames
+            for k in range(1, rf_data.shape[2]):  # frames
 
                 phase_shift = (
                     instantaneous_phase[j, i, k] - instantaneous_phase[j, i, k - 1]
@@ -172,65 +174,6 @@ def filter_movement(rf_data, frames, direction="up"):
                     )
 
     return filtered_rf_data
-
-
-# fgilter oevemnt by phase difference for nsi
-def filter_movement_nsi(rf_data_zm, rf_data_dc1, rf_data_dc2, frames, direction="up"):
-
-    rf_data = [rf_data_zm, rf_data_dc1, rf_data_dc2]
-
-    filtered_rf_data_zm = np.zeros_like(rf_data_zm, dtype=np.complex64)
-    filtered_rf_data_dc1 = np.zeros_like(rf_data_dc1, dtype=np.complex64)
-    filtered_rf_data_dc2 = np.zeros_like(rf_data_dc2, dtype=np.complex64)
-
-    filtered_rf_data = [filtered_rf_data_zm, filtered_rf_data_dc1, filtered_rf_data_dc2]
-
-    instantaneous_phase_zm = np.angle(rf_data_zm)
-    instantaneous_phase_dc1 = np.angle(rf_data_dc1)
-    instantaneous_phase_dc2 = np.angle(rf_data_dc2)
-
-    instantaneous_phase = [
-        instantaneous_phase_zm,
-        instantaneous_phase_dc1,
-        instantaneous_phase_dc2,
-    ]
-    # instantaneous_phase = np.sum(instantaneous_phase, axis=0) / 3
-
-    min_instantaneous_phase = float("inf")
-    max_instantaneous_phase = float("-inf")
-
-    for h in range(0, 3):
-        for i in range(0, rf_data[0].shape[1]):  # tranducers
-            for j in range(0, rf_data[0].shape[0]):  # samples depth
-                for k in range(1, frames):  # frames
-                    phase_shift = (
-                        instantaneous_phase[h][j, i, k]
-                        - instantaneous_phase[h][j, i, k - 1]
-                    )
-                    if phase_shift < min_instantaneous_phase:
-                        min_instantaneous_phase = phase_shift
-                    if phase_shift > max_instantaneous_phase:
-                        max_instantaneous_phase = phase_shift
-                    if direction == "up":
-                        for l in range(len(rf_data)):
-                            if phase_shift > 0:
-                                filtered_rf_data[l][j, i, k] = rf_data[l][j, i, k]
-                            else:
-                                filtered_rf_data[l][j, i, k] = 0
-                    elif direction == "down":
-                        for l in range(len(rf_data)):
-                            if phase_shift < -0:
-                                filtered_rf_data[l][j, i, k] = rf_data[l][j, i, k]
-                            else:
-                                filtered_rf_data[l][j, i, k] = 0
-
-    return (
-        filtered_rf_data[0],
-        filtered_rf_data[1],
-        filtered_rf_data[2],
-        min_instantaneous_phase,
-        max_instantaneous_phase,
-    )
 
 
 def moving_average_filter(rf_data, window_size):

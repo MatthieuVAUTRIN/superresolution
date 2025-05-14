@@ -20,7 +20,12 @@ class MultiprocessingHandler:
         self.frames_to_process = frames_to_process
         self.batch_size = batch_size
 
-    def run_multiprocessing(self, func):
+    def run_multiprocessing(self, func, cuda):
+
+        if cuda:
+            WORKERS = min(self.MAX_WORKERS, 1)
+        else:
+            WORKERS = self.MAX_WORKERS
 
         if self.frames_to_process % self.batch_size == 0:
             frame_iterations = self.frames_to_process // self.batch_size
@@ -30,15 +35,15 @@ class MultiprocessingHandler:
         # run multiprocessing
         start_time = timeit.default_timer()
 
-        print(f"\nStarting process pool with {self.MAX_WORKERS} workers.")
+        print(f"\nStarting process pool with {WORKERS} workers.")
+        if cuda:
+            print("CUDA enabled, processing on GPU.")
         print(f"Total frames to process: {self.frames_to_process}")
         print(f"Batch size: {self.batch_size}")
         print(f"Total batches: {frame_iterations}")
         futures = []
 
-        with concurrent.futures.ProcessPoolExecutor(
-            max_workers=self.MAX_WORKERS
-        ) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=WORKERS) as executor:
             last_batch_flag = False
 
             for i in range(0, self.frames_to_process, self.batch_size):
@@ -84,6 +89,7 @@ class MultiprocessingHandler:
                         start_frame=current_batch_start_frame,
                         current_batch_size=current_batch_actual_size,
                         frame_iterations=frame_iterations,
+                        cuda=cuda,
                     )
                 )
 

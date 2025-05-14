@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from modules.multiprocessing import MultiprocessingHandler
 from modules import filters
@@ -22,7 +23,9 @@ class Preprocessing:
         convert_complex,
         interpolate_data,
         # filter parameters
+        apply_hp,
         apply_hp_svd,
+        apply_noise_profile,
         apply_directional_filter,
         directional_filter_direction,
         # saving parameters
@@ -57,7 +60,9 @@ class Preprocessing:
         self.rf_dtype, self.samples, self.sampling_rate = self._init_preprocessing()
 
         # filter parameters
+        self.apply_hp = apply_hp
         self.apply_hp_svd = apply_hp_svd
+        self.apply_noise_profile = apply_noise_profile
         self.apply_directional_filter = apply_directional_filter
         self.directional_filter_direction = directional_filter_direction
 
@@ -126,31 +131,9 @@ class Preprocessing:
 
             actual_loaded_frames = rf_matrix.shape[3]
 
-            if self.apply_hp_svd:
-                for i in range(0, len(self.params["rf"]["angles"])):
-                    rf_matrix[:, :, i, :] = filters.filter_hp_svd(
-                        rf_matrix[:, :, i, :],
-                        self.sampling_rate,
-                        self.params["rf"]["frequency"],
-                        1,
-                    )
-
             if self.convert_complex:
 
                 rf_matrix = dsp.get_iq(rf_matrix, axis=0)
-
-                if self.apply_directional_filter:
-                    rf_matrix = filters.filter_movement(
-                        rf_matrix,
-                        actual_loaded_frames,
-                        direction=self.directional_filter_direction,
-                    )
-
-            if actual_loaded_frames != current_batch_size:
-                print(
-                    f"Warning: Loaded {actual_loaded_frames} frames for batch {batch_idx}, expected {current_batch_size}."
-                )
-                current_batch_size = actual_loaded_frames
 
             # Interpolate data
             if self.interpolate_data:
@@ -176,6 +159,52 @@ class Preprocessing:
                 rf_matrix = rf_matrix_tmp
 
                 del rf_matrix_tmp
+
+            if self.apply_hp:
+                for i in range(0, len(self.params["rf"]["angles"])):
+                    rf_matrix[:, :, i, :] = filters.filter_hp(
+                        rf_matrix[:, :, i, :],
+                        self.sampling_rate,
+                        self.params["rf"]["frequency"],
+                        15,
+                        500,
+                    )
+
+            if self.apply_hp_svd:
+                for i in range(0, len(self.params["rf"]["angles"])):
+                    rf_matrix[:, :, i, :], S = filters.filter_hp_svd(
+                        rf_matrix[:, :, i, :],
+                        self.sampling_rate,
+                        self.params["rf"]["frequency"],
+                        1,
+                    )
+
+            if self.apply_noise_profile:
+                for i in range(0, len(self.params["rf"]["angles"])):
+                    rf_matrix[:, :, i, :], _ = filters.svd_noise_equalization_3d(
+                        rf_matrix[:, :, i, :], window_length=128
+                    )
+                    # rf_matrix[:, :, i, :] /= noise_profile
+
+            if self.apply_directional_filter:
+                for i in range(0, len(self.params["rf"]["angles"])):
+                    # rf_matrix[:, :, i, :] = filters.filter_movement(
+                    #     rf_matrix[:, :, i, :], "down"
+                    # )
+                    (
+                        rf_matrix[:, :, i, : int(self.frames_to_process / 2)],
+                        rf_matrix[:, :, i, int(self.frames_to_process / 2) :],
+                    ) = filters.get_doppler_flow_images(
+                        rf_matrix[:, :, i, :],
+                        self.sampling_rate,
+                        False,
+                    )
+
+            if actual_loaded_frames != current_batch_size:
+                print(
+                    f"Warning: Loaded {actual_loaded_frames} frames for batch {batch_idx}, expected {current_batch_size}."
+                )
+                current_batch_size = actual_loaded_frames
 
             output_folder = os.path.join(self.rf_data_path, self.folder_name)
 
