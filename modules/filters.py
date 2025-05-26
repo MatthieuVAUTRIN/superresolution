@@ -1,6 +1,9 @@
 from scipy.signal import butter, lfilter, envelope, medfilt2d
+from scipy import signal
 import numpy as np
 from scipy import ndimage
+import matplotlib.pyplot as plt
+from numba import njit
 
 
 def filter_hp(bf, fsam, f, nrebound, fixed=0):
@@ -39,6 +42,8 @@ def filter_svd(bf, nelim):
     mf = U @ Sf @ Vt
     # reshape back to 3D
     bff = np.reshape(mf, (nz, nx, nt))
+
+    del U, Vt, m, mf, Sf
     # return filtered data and singular values
     return bff, S
 
@@ -106,7 +111,7 @@ def filter_hp_svd(bf, fsam, f, nelim):
     return bff, S
 
 
-def _calculate_axis_doppler_power(time_signal, sampling_rate, use_nsi):
+def _calculate_axis_doppler_power(time_signal, sampling_rate):
 
     n = len(time_signal)
     time_signal_fft = np.fft.fft(time_signal)
@@ -117,19 +122,21 @@ def _calculate_axis_doppler_power(time_signal, sampling_rate, use_nsi):
     positive_freq_mask = freq_f >= 0
     negative_freq_mask = freq_f < 0
 
-    if use_nsi:
-        pos_flow = envelope(esd[positive_freq_mask], residual=None)
-        neg_flow = envelope(esd[negative_freq_mask], residual=None)
-    else:
-        pos_flow = esd[positive_freq_mask]
-        neg_flow = esd[negative_freq_mask]
+    pos_flow = esd[positive_freq_mask]
+    neg_flow = esd[negative_freq_mask]
 
     return pos_flow, neg_flow
 
 
-def get_doppler_flow_images(rf_matrix, sampling_rate, nsi: bool = False):
+def get_doppler_flow_images(rf_matrix, sampling_rate, pd_masking: bool = False):
 
     num_depth, num_lateral, num_time = rf_matrix.shape
+    gray_flow_image = 0
+
+    if pd_masking:
+        pd_image = get_doppler_power_image(rf_matrix)
+        pd_image = 20 * np.log10(pd_image) - np.max(20 * np.log10(pd_image))
+        gray_flow_image = np.zeros((num_depth, num_lateral, num_time))
     # pos_flow_image = np.zeros((num_depth, num_lateral))
     # neg_flow_image = np.zeros((num_depth, num_lateral))
     pos_flow_image = np.zeros((num_depth, num_lateral, int(num_time / 2)))
@@ -137,10 +144,14 @@ def get_doppler_flow_images(rf_matrix, sampling_rate, nsi: bool = False):
 
     for i in range(num_depth):  # depth
         for j in range(num_lateral):  # lateral
+            if pd_masking:
+                if pd_image[i, j] < -40:
+                    gray_flow_image[i, j, :] = rf_matrix[i, j, :]
+                    continue
 
             time_signal = rf_matrix[i, j, :]
             pos_flow, neg_flow = _calculate_axis_doppler_power(
-                time_signal, sampling_rate, use_nsi=nsi
+                time_signal, sampling_rate
             )
 
             # pos_flow_image[i, j] = pos_flow
@@ -148,7 +159,21 @@ def get_doppler_flow_images(rf_matrix, sampling_rate, nsi: bool = False):
             pos_flow_image[i, j, :] = pos_flow
             neg_flow_image[i, j, :] = neg_flow
 
-    return pos_flow_image, neg_flow_image
+    return pos_flow_image, neg_flow_image, gray_flow_image
+
+
+@njit(parallel=True)
+def get_doppler_power_image(rf_matrix):
+    temporal_samples = rf_matrix.shape[2]
+    power_doppler_image = np.zeros(
+        (rf_matrix.shape[0], rf_matrix.shape[1]), dtype=rf_matrix.dtype
+    )
+
+    for i in range(temporal_samples):  # frames
+        for j in range(rf_matrix.shape[0]):  # depth
+            for k in range(rf_matrix.shape[1]):  # lateral
+                power_doppler_image[j, k] += rf_matrix[j, k, i] ** 2
+    return 1 / temporal_samples * power_doppler_image
 
 
 # phase difference for non nsi images
@@ -198,15 +223,6 @@ def moving_average_filter(rf_data, window_size):
     #     moving_averages.append(moving_averages[-1])
 
     return rf_smooth
-
-
-import numpy as np
-from scipy import signal
-import matplotlib.pyplot as plt
-
-import numpy as np
-from scipy import signal
-import matplotlib.pyplot as plt
 
 
 def svd_noise_equalization_3d(iq_data, N=1, window_length=15, visualize=False):

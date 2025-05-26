@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+from kneed import KneeLocator
 
 from modules.multiprocessing import MultiprocessingHandler
 from modules import filters
@@ -128,7 +129,6 @@ class Preprocessing:
             actual_loaded_frames = rf_matrix.shape[3]
 
             if self.convert_complex:
-
                 rf_matrix = dsp.get_iq(rf_matrix, axis=0)
 
             # Interpolate data
@@ -162,31 +162,37 @@ class Preprocessing:
                         rf_matrix[:, :, i, :],
                         self.sampling_rate,
                         self.params["rf"]["frequency"],
-                        15,
+                        1,
                         500,
                     )
 
             if self.apply_hp_svd:
+                min_singular_value = 0
                 for i in range(0, len(self.params["rf"]["angles"])):
                     rf_matrix[:, :, i, :], S = filters.filter_hp_svd(
                         rf_matrix[:, :, i, :],
                         self.sampling_rate,
                         self.params["rf"]["frequency"],
-                        1,
+                        2,
                     )
+                    kneedle = KneeLocator(
+                        range(1, len(S) + 1), S, curve="convex", direction="decreasing"
+                    )
+                    min_singular_value += kneedle.elbow
+
+                print(
+                    f"Optimal number of singular values for SVD HPF: {min_singular_value / len(self.params['rf']['angles'])}"
+                )
 
             if self.apply_noise_profile:
                 for i in range(0, len(self.params["rf"]["angles"])):
                     rf_matrix[:, :, i, :], _ = filters.svd_noise_equalization_3d(
                         rf_matrix[:, :, i, :], window_length=128
                     )
-                    # rf_matrix[:, :, i, :] /= noise_profile
 
             if self.apply_directional_filter:
                 for i in range(0, len(self.params["rf"]["angles"])):
-                    # rf_matrix[:, :, i, :] = filters.filter_movement(
-                    #     rf_matrix[:, :, i, :], "down"
-                    # )
+
                     (
                         rf_matrix[:, :, i, : int(self.frames_to_process / 2)],
                         rf_matrix[:, :, i, int(self.frames_to_process / 2) :],

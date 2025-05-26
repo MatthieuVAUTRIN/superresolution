@@ -71,7 +71,7 @@ if __name__ == "__main__":
         # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0010.mat",
         # "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/rf0011.mat",
     ]
-    output_matrix_name = "1280_concat_IQ_rf"
+    output_matrix_name = "1280_concat_rf"
     output_folder = "/home/matmat/Documents/urban_lab/002_Superresolution/raw_data_mat/006_mouse_long/concat/"
 
     output_path = os.path.join(output_folder, output_matrix_name)

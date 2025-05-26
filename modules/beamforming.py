@@ -14,10 +14,12 @@ from scipy.io import loadmat
 
 from modules.beamformer import Beamformer
 from modules.beamformer_gpu import BeamformerGPU
+from modules.DMAS_bf import BeamformerDMAS
+from modules.gDMAS_bf import BeamformergDMAS
 from modules.multiprocessing import MultiprocessingHandler
 
 
-class Beamforming(Beamformer, BeamformerGPU):
+class Beamforming(Beamformer, BeamformerGPU, BeamformerDMAS, BeamformergDMAS):
 
     def __init__(
         self,
@@ -92,6 +94,28 @@ class Beamforming(Beamformer, BeamformerGPU):
             debug=debug,
         )
         BeamformerGPU.__init__(
+            self,
+            nsi_dc_offset=nsi_dc_offset,
+            params=params,
+            sampling_rate=self.sampling_rate,
+            samples=self.samples,
+            using_real_data=not self.using_simulation_data,
+            interpolate_data=interpolate_data,
+            bf_dtype=self.bf_dtype,
+            debug=debug,
+        )
+        BeamformerDMAS.__init__(
+            self,
+            nsi_dc_offset=nsi_dc_offset,
+            params=params,
+            sampling_rate=self.sampling_rate,
+            samples=self.samples,
+            using_real_data=not self.using_simulation_data,
+            interpolate_data=interpolate_data,
+            bf_dtype=self.bf_dtype,
+            debug=debug,
+        )
+        BeamformergDMAS.__init__(
             self,
             nsi_dc_offset=nsi_dc_offset,
             params=params,
@@ -232,9 +256,10 @@ class Beamforming(Beamformer, BeamformerGPU):
                         rf_matrix, actual_loaded_frames, apo_func
                     )
                 else:
-                    bf_apodized_matrix = self.beamforming(
+                    bf_apodized_matrix = self.beamforming_gdmas(
                         rf_matrix, actual_loaded_frames, apo_func
                     )
+
                 bf_matrices.append(bf_apodized_matrix)
 
             if self.angles_debug and not self.run_nsi_apodization:

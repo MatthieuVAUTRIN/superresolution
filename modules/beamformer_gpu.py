@@ -283,7 +283,7 @@ class BeamformerGPU:
 
                             value = interpolated_value * apodization[trans_idx]
 
-                            cuda.atomic.add(
+                            cuda.atomic.add(  #! gpu only works for complex data
                                 bf.real,
                                 (ver_res, lat_res, i, h),
                                 value.real,
