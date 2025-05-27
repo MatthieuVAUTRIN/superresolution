@@ -286,6 +286,8 @@ class GcfNSI:
         self.debug = debug
         self.angles = params["rf"]["angles"]
 
+        print("Initialized GCF NSI beamformer - CPU")
+
     @staticmethod
     @njit(parallel=True, fastmath=True, cache=True)
     def _GCF_NSI_beamforming(
@@ -415,22 +417,6 @@ class GcfNSI:
                             first_transducer,
                             first_transducer + transducers_in_effective_array,
                         ):  # for transducers in effective array
-
-                            # interpolated_value = delay_value(
-                            #     rf,
-                            #     depth,
-                            #     position,
-                            #     pitch,
-                            #     c,
-                            #     cos_angles,
-                            #     sin_angles,
-                            #     t0_delay,
-                            #     samples,
-                            #     sampling_rate,
-                            #     i,
-                            #     l,
-                            #     h,
-                            # )
 
                             bf[k, j, i, h] += delay_values[l, i, h] * apodization[l]
 

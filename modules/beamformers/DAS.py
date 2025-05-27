@@ -149,6 +149,7 @@ class Das:
         bf_dtype,
         debug,
     ):
+
         self.nsi_dc_offset = nsi_dc_offset
         self.nx = params["image"]["nx"]
         self.nz = params["image"]["nz"]
@@ -172,6 +173,8 @@ class Das:
         self.bf_dtype = bf_dtype
         self.debug = debug
         self.angles = params["rf"]["angles"]
+
+        print("Initialized DAS beamformer - CPU")
 
     @staticmethod
     @njit(parallel=True)

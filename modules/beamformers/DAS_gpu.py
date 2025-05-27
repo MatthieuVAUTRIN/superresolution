@@ -180,6 +180,8 @@ class DasGPU:
         self.debug = debug
         self.angles = params["rf"]["angles"]
 
+        print("Initialized DAS beamformer - GPU")
+
     @staticmethod
     @cuda.jit
     def _beamforming_gpu(

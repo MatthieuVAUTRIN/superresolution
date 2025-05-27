@@ -34,6 +34,7 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
 
         switcher = {
             "das": self._init_das,
+            "nsi": self._init_nsi,
             "gdmas": self._init_gdmas,
             "dmas": self._init_dmas,
             "gcf_nsi": self._init_gcf_nsi,
@@ -45,12 +46,16 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
 
         #! create wrapper later if needed bevause of paramters discrepancies
         if callable(init_method):
-            init_method()
+            self.nsi_apo_required = init_method()
         else:
             raise ValueError(init_method)
 
+    @staticmethod
+    def is_NSI(beamformer_type):
+        return True if beamformer_type in ["nsi", "gcf_nsi"] else False
+
     def _init_das(self):
-        print("Initializing DAS beamformer - CPU and GPU versions")
+        print("Initializing DAS beamformer - CPU and GPU available")
         Das.__init__(
             self,
             params=self.params,
@@ -74,10 +79,11 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             bf_dtype=self.bf_dtype,
             debug=self.debug,
         )
+        return False
 
-    def _init_dmas(self):
-        print("Initializing DMAS beamformer - CPU version")
-        Dmas.__init__(
+    def _init_nsi(self):
+        print("Initializing NSI beamformer - CPU and GPU available")
+        Das.__init__(
             self,
             params=self.params,
             nsi_dc_offset=self.nsi_dc_offset,
@@ -89,8 +95,36 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             debug=self.debug,
         )
 
+        DasGPU.__init__(
+            self,
+            params=self.params,
+            nsi_dc_offset=self.nsi_dc_offset,
+            sampling_rate=self.sampling_rate,
+            samples=self.samples,
+            using_real_data=self.using_real_data,
+            interpolate_data=self.interpolate_data,
+            bf_dtype=self.bf_dtype,
+            debug=self.debug,
+        )
+        return True
+
+    def _init_dmas(self):
+        print("Initializing DMAS beamformer - CPU available")
+        Dmas.__init__(
+            self,
+            params=self.params,
+            nsi_dc_offset=self.nsi_dc_offset,
+            sampling_rate=self.sampling_rate,
+            samples=self.samples,
+            using_real_data=self.using_real_data,
+            interpolate_data=self.interpolate_data,
+            bf_dtype=self.bf_dtype,
+            debug=self.debug,
+        )
+        return False
+
     def _init_gdmas(self):
-        print("Initializing gDMAS beamformer - CPU version")
+        print("Initializing gDMAS beamformer - CPU available")
         gDMAS.__init__(
             self,
             params=self.params,
@@ -102,9 +136,10 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             bf_dtype=self.bf_dtype,
             debug=self.debug,
         )
+        return False
 
     def _init_gcf_nsi(self):
-        print("Initializing GCF_NSI beamformer - CPU version")
+        print("Initializing GCF_NSI beamformer - CPU available")
         GcfNSI.__init__(
             self,
             params=self.params,
@@ -116,3 +151,4 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             bf_dtype=self.bf_dtype,
             debug=self.debug,
         )
+        return True

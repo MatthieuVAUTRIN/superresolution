@@ -237,6 +237,8 @@ class Dmas:
         self.debug = debug
         self.angles = params["rf"]["angles"]
 
+        print("Initialized DMAS beamformer - CPU")
+
     @staticmethod
     @njit(parallel=True)
     def _dmas_beamforming(

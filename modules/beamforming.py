@@ -30,14 +30,13 @@ class Beamforming(BeamformerHandler):
         # Technical parameters
         MAX_WORKERS: int,
         frames_to_process: int,
-        batch_size,
+        batch_size: int,
         # beamforming parameters
         rf_matrix_path: str,
         using_simulation_data: bool,
         using_matlab_data: bool,
         convert_complex: bool,
         interpolate_data: bool,
-        run_nsi_apodization: bool,
         other_apodization,
         # saving parameters
         bf_data_path: str,
@@ -48,7 +47,6 @@ class Beamforming(BeamformerHandler):
         self.params = params
         self.convert_complex = convert_complex
         self.interpolate_data = interpolate_data
-        self.run_nsi_apodization = run_nsi_apodization
         self.other_apodization = other_apodization
         # technical parameters
         self.MAX_WORKERS = MAX_WORKERS
@@ -72,6 +70,8 @@ class Beamforming(BeamformerHandler):
 
         self.angles_debug = angles_debug
         self.debug = debug
+
+        self.run_nsi_apodization = BeamformerHandler.is_NSI(self.beamformer_type)
 
         (
             self.samples,
