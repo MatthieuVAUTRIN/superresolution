@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from kneed import KneeLocator
 
-from modules.multiprocessing import MultiprocessingHandler
+from modules.handlers.multiprocessing import MultiprocessingHandler
 from modules import filters
 from modules import dsp
 

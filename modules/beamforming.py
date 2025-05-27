@@ -12,39 +12,39 @@ from scipy.signal import envelope, firwin, hilbert
 from scipy import fft
 from scipy.io import loadmat
 
-from modules.beamformers.DAS import Das
-from modules.beamformers.DAS_gpu import DasGPU
-from modules.beamformers.gDMAS import BeamformergDMAS
-from modules.beamformers.GCF_NSI import BeamformerGcfNsi
-from modules.multiprocessing import MultiprocessingHandler
+from modules.handlers.bf_handler import BeamformerHandler
+from modules.handlers.multiprocessing import MultiprocessingHandler
 
 
-class Beamforming(Das, DasGPU, BeamformergDMAS, BeamformerGcfNsi):
+class Beamforming(BeamformerHandler):
 
     def __init__(
         self,
+        # beamformer_type,
+        beamformer_type: str,
         # beamformer parameters
-        nsi_dc_offset,
-        params,
-        debug,
-        angles_debug,
+        nsi_dc_offset: float,
+        params: dict,
+        debug: bool,
+        angles_debug: bool,
         # Technical parameters
-        MAX_WORKERS,
-        frames_to_process,
+        MAX_WORKERS: int,
+        frames_to_process: int,
         batch_size,
         # beamforming parameters
-        rf_matrix_path,
-        using_simulation_data,
-        using_matlab_data,
-        convert_complex,
-        interpolate_data,
-        run_nsi_apodization,
+        rf_matrix_path: str,
+        using_simulation_data: bool,
+        using_matlab_data: bool,
+        convert_complex: bool,
+        interpolate_data: bool,
+        run_nsi_apodization: bool,
         other_apodization,
         # saving parameters
-        bf_data_path,
-        folder_name,
-        beamformed_apodized_matrix_name,
+        bf_data_path: str,
+        folder_name: str,
+        beamformed_apodized_matrix_name: str,
     ):
+        self.beamformer_type = beamformer_type.lower()
         self.params = params
         self.convert_complex = convert_complex
         self.interpolate_data = interpolate_data
@@ -71,60 +71,28 @@ class Beamforming(Das, DasGPU, BeamformergDMAS, BeamformerGcfNsi):
         self.beamformed_apodized_matrix_name = beamformed_apodized_matrix_name
 
         self.angles_debug = angles_debug
+        self.debug = debug
 
         (
             self.samples,
             self.sampling_rate,
             self.bf_dtype,
-            # self.frame_iterations,
             self.samples_for_acquisition_depth,
             self.samples_for_array_length,
             self.apodization_functions,
         ) = self._init_beamforming()
 
-        Das.__init__(
+        BeamformerHandler.__init__(
             self,
+            beamformer_type=self.beamformer_type,
+            params=self.params,
             nsi_dc_offset=nsi_dc_offset,
-            params=params,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
             using_real_data=not self.using_simulation_data,
-            interpolate_data=interpolate_data,
+            interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
-            debug=debug,
-        )
-        DasGPU.__init__(
-            self,
-            nsi_dc_offset=nsi_dc_offset,
-            params=params,
-            sampling_rate=self.sampling_rate,
-            samples=self.samples,
-            using_real_data=not self.using_simulation_data,
-            interpolate_data=interpolate_data,
-            bf_dtype=self.bf_dtype,
-            debug=debug,
-        )
-        BeamformergDMAS.__init__(
-            self,
-            nsi_dc_offset=nsi_dc_offset,
-            params=params,
-            sampling_rate=self.sampling_rate,
-            samples=self.samples,
-            using_real_data=not self.using_simulation_data,
-            interpolate_data=interpolate_data,
-            bf_dtype=self.bf_dtype,
-            debug=debug,
-        )
-        BeamformerGcfNsi.__init__(
-            self,
-            nsi_dc_offset=nsi_dc_offset,
-            params=params,
-            sampling_rate=self.sampling_rate,
-            samples=self.samples,
-            using_real_data=not self.using_simulation_data,
-            interpolate_data=interpolate_data,
-            bf_dtype=self.bf_dtype,
-            debug=debug,
+            debug=self.debug,
         )
 
     def __get_samples_depth_lateral_resolution(
@@ -252,11 +220,11 @@ class Beamforming(Das, DasGPU, BeamformergDMAS, BeamformerGcfNsi):
             for apo_func in self.apodization_functions:
                 if cuda:
                     rf_matrix = rf_matrix.copy()
-                    bf_apodized_matrix = self.beamforming_DAS_GPU(
+                    bf_apodized_matrix = self.beamforming_gpu(
                         rf_matrix, actual_loaded_frames, apo_func
                     )
                 else:
-                    bf_apodized_matrix = self.beamforming_DAS(
+                    bf_apodized_matrix = self.beamforming(
                         rf_matrix, actual_loaded_frames, apo_func
                     )
 

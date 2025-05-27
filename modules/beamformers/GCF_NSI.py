@@ -250,7 +250,7 @@ def apodization_wrapper(
             return np.ones(array_length)
 
 
-class BeamformerGcfNsi:
+class GcfNSI:
     def __init__(
         self,
         nsi_dc_offset,
@@ -288,7 +288,7 @@ class BeamformerGcfNsi:
 
     @staticmethod
     @njit(parallel=True, fastmath=True, cache=True)
-    def _GCF_NSI_beamforming_opt(
+    def _GCF_NSI_beamforming(
         rf,
         nx,
         nz,
@@ -443,8 +443,8 @@ class BeamformerGcfNsi:
             print("=" * 60 + "\n")
         return bf
 
-    def beamforming_GCF_NSI(self, rf, frames, apodization_function):
-        bf = self._GCF_NSI_beamforming_opt(
+    def beamforming(self, rf, frames, apodization_function):
+        bf = self._GCF_NSI_beamforming(
             rf,
             self.nx,
             self.nz,

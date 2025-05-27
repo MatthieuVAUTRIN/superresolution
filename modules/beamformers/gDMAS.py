@@ -201,7 +201,7 @@ def apodization_wrapper(
             return np.ones(array_length)
 
 
-class BeamformergDMAS:
+class gDMAS:
     def __init__(
         self,
         nsi_dc_offset,
@@ -239,7 +239,7 @@ class BeamformergDMAS:
 
     @staticmethod
     @njit(parallel=True)
-    def _gdmas_beamforming_opt(
+    def _gdmas_beamforming(
         rf,
         nx,
         nz,
@@ -405,9 +405,9 @@ class BeamformergDMAS:
             print("=" * 60 + "\n")
         return bf
 
-    def beamforming_gdmas(self, rf, frames, apodization_function):
+    def beamforming(self, rf, frames, apodization_function):
 
-        return self._gdmas_beamforming_opt(
+        return self._gdmas_beamforming(
             rf,
             self.nx,
             self.nz,

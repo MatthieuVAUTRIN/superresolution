@@ -201,7 +201,7 @@ def apodization_wrapper(
             return np.ones(array_length)
 
 
-class BeamformerDMAS:
+class Dmas:
     def __init__(
         self,
         nsi_dc_offset,
@@ -239,7 +239,7 @@ class BeamformerDMAS:
 
     @staticmethod
     @njit(parallel=True)
-    def _dmas_beamforming_opt(
+    def _dmas_beamforming(
         rf,
         nx,
         nz,
@@ -402,7 +402,7 @@ class BeamformerDMAS:
         return bf
 
     def beamforming_dmas(self, rf, frames, apodization_function):
-        return self._dmas_beamforming_opt(
+        return self._dmas_beamforming(
             rf,
             self.nx,
             self.nz,

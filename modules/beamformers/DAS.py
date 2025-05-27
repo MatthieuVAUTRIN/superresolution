@@ -175,7 +175,7 @@ class Das:
 
     @staticmethod
     @njit(parallel=True)
-    def _beamforming_opt(
+    def _beamforming(
         rf,
         nx,
         nz,
@@ -317,8 +317,8 @@ class Das:
             print("=" * 60 + "\n")
         return bf
 
-    def beamforming_DAS(self, rf, frames, apodization_function):
-        return self._beamforming_opt(
+    def beamforming(self, rf, frames, apodization_function):
+        return self._beamforming(
             rf,
             self.nx,
             self.nz,
