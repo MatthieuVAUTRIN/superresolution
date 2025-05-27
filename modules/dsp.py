@@ -86,3 +86,57 @@ def interpolate_rf(
     )
 
     return filtered_rf_matrix
+
+
+@njit
+def bit_reverse(n, bits):
+    result = 0
+    for i in range(bits):
+        if n & (1 << i):
+            result |= 1 << (bits - 1 - i)
+    return result
+
+
+@njit(cache=True, fastmath=True)
+def fft(x):
+    n = len(x)
+    # Check if n is a power of 2
+    if n & (n - 1) != 0:
+        raise ValueError("Size of input must be a power of 2")
+
+    # Calculate number of bits needed to represent n
+    bits = 0
+    temp_n = n
+    while temp_n > 1:
+        temp_n >>= 1
+        bits += 1
+
+    # Create output array
+    result = np.zeros(n, dtype=np.complex64)
+
+    # Bit reversal permutation
+    for i in range(n):
+        reversed_i = bit_reverse(i, bits)
+        if i <= reversed_i:
+            result[i] = x[reversed_i]
+            result[reversed_i] = x[i]
+
+    # Butterfly computations
+    for stage in range(1, bits + 1):
+        m = 1 << stage  # 2^stage
+        half_m = m >> 1  # m/2
+
+        for k in range(0, n, m):
+            for j in range(half_m):
+                # Calculate twiddle factor
+                omega = np.exp(-2j * np.pi * j / m)
+
+                # Apply butterfly operation
+                t = omega * result[k + j + half_m]
+                u = result[k + j]
+
+                # Store results
+                result[k + j] = u + t
+                result[k + j + half_m] = u - t
+
+    return result

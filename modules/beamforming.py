@@ -12,14 +12,14 @@ from scipy.signal import envelope, firwin, hilbert
 from scipy import fft
 from scipy.io import loadmat
 
-from modules.beamformer import Beamformer
-from modules.beamformer_gpu import BeamformerGPU
-from modules.DMAS_bf import BeamformerDMAS
-from modules.gDMAS_bf import BeamformergDMAS
+from modules.beamformers.DAS import Das
+from modules.beamformers.DAS_gpu import DasGPU
+from modules.beamformers.gDMAS import BeamformergDMAS
+from modules.beamformers.GCF_NSI import BeamformerGcfNsi
 from modules.multiprocessing import MultiprocessingHandler
 
 
-class Beamforming(Beamformer, BeamformerGPU, BeamformerDMAS, BeamformergDMAS):
+class Beamforming(Das, DasGPU, BeamformergDMAS, BeamformerGcfNsi):
 
     def __init__(
         self,
@@ -82,7 +82,7 @@ class Beamforming(Beamformer, BeamformerGPU, BeamformerDMAS, BeamformergDMAS):
             self.apodization_functions,
         ) = self._init_beamforming()
 
-        Beamformer.__init__(
+        Das.__init__(
             self,
             nsi_dc_offset=nsi_dc_offset,
             params=params,
@@ -93,18 +93,7 @@ class Beamforming(Beamformer, BeamformerGPU, BeamformerDMAS, BeamformergDMAS):
             bf_dtype=self.bf_dtype,
             debug=debug,
         )
-        BeamformerGPU.__init__(
-            self,
-            nsi_dc_offset=nsi_dc_offset,
-            params=params,
-            sampling_rate=self.sampling_rate,
-            samples=self.samples,
-            using_real_data=not self.using_simulation_data,
-            interpolate_data=interpolate_data,
-            bf_dtype=self.bf_dtype,
-            debug=debug,
-        )
-        BeamformerDMAS.__init__(
+        DasGPU.__init__(
             self,
             nsi_dc_offset=nsi_dc_offset,
             params=params,
@@ -116,6 +105,17 @@ class Beamforming(Beamformer, BeamformerGPU, BeamformerDMAS, BeamformergDMAS):
             debug=debug,
         )
         BeamformergDMAS.__init__(
+            self,
+            nsi_dc_offset=nsi_dc_offset,
+            params=params,
+            sampling_rate=self.sampling_rate,
+            samples=self.samples,
+            using_real_data=not self.using_simulation_data,
+            interpolate_data=interpolate_data,
+            bf_dtype=self.bf_dtype,
+            debug=debug,
+        )
+        BeamformerGcfNsi.__init__(
             self,
             nsi_dc_offset=nsi_dc_offset,
             params=params,
@@ -252,11 +252,11 @@ class Beamforming(Beamformer, BeamformerGPU, BeamformerDMAS, BeamformergDMAS):
             for apo_func in self.apodization_functions:
                 if cuda:
                     rf_matrix = rf_matrix.copy()
-                    bf_apodized_matrix = self.beamforming_gpu(
+                    bf_apodized_matrix = self.beamforming_DAS_GPU(
                         rf_matrix, actual_loaded_frames, apo_func
                     )
                 else:
-                    bf_apodized_matrix = self.beamforming_gdmas(
+                    bf_apodized_matrix = self.beamforming_DAS(
                         rf_matrix, actual_loaded_frames, apo_func
                     )
 

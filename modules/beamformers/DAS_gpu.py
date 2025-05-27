@@ -144,7 +144,7 @@ def apodization_wrapper(
         )
 
 
-class BeamformerGPU:
+class DasGPU:
     def __init__(
         self,
         nsi_dc_offset,
@@ -294,7 +294,7 @@ class BeamformerGPU:
                                 value.imag,
                             )
 
-    def beamforming_gpu(self, rf, frames, apodization_function):
+    def beamforming_DAS_GPU(self, rf, frames, apodization_function):
 
         apo_int = [ord(c.lower()) for c in apodization_function]
         apo_int = np.int16(np.sum(apo_int))

@@ -3,9 +3,122 @@ import timeit
 import os
 import math
 
+from modules.dsp import fft
+
 import numpy as np
-import numpy as np
-from numba import njit
+from numba import njit, objmode
+
+
+@njit()
+def delay_value(
+    rf,
+    depth,
+    position,
+    pitch,
+    c,
+    cos_angles,
+    sin_angles,
+    t0_delay,
+    samples,
+    sampling_rate,
+    current_angle,
+    current_transducer,
+    current_frame,
+):
+    """
+    Calculate the interpolated delay value for a given depth, position, and angle
+
+    Parameters:
+    -----------
+    param rf: RF data matrix
+    param depth: Depth of the object in meters
+    param position: Lateral position of the object in meters
+    param pitch: Pitch of the transducer array in meters
+    param c: Speed of sound in the medium in m/s
+    param cos_angles: List of cosine values for the angles
+    param sin_angles: List of sine values for the angles
+    param t0_delay: Initial delay values for each angle
+    param samples: Total number of samples in the RF data
+    param sampling_rate: Sampling rate in Hz
+    param current_angle: Index of the current angle being processed
+    param current_transducer: Index of the current transducer being processed
+    param current_frame: Index of the current frame being processed
+
+    Returns:
+    -----------
+    return: Interpolated delay value for the given parameters
+    """
+    i = current_angle
+    l = current_transducer
+    h = current_frame
+
+    interpolated_value = 0
+
+    delay1 = (
+        (depth * cos_angles[i] + position * sin_angles[i])
+        + (np.sqrt(depth**2 + (l * pitch - position) ** 2))
+    ) / c - t0_delay[
+        i
+    ]  # delay in s
+
+    exact_delay_idx_float = delay1 * sampling_rate
+
+    # for better accuracr, lets apply linear interpolation on our delay values
+    idx_floor = int(np.floor(exact_delay_idx_float))  # x0
+    idx_ceil = idx_floor + 1  # x1
+
+    if 0 <= idx_floor and idx_ceil < samples:
+
+        weight_ceil = exact_delay_idx_float - idx_floor  # wieght for y1
+        weight_floor = idx_ceil - exact_delay_idx_float  # weight for y0
+
+        val_floor = rf[idx_floor, l, i, h]  # y0
+        val_ceil = rf[idx_ceil, l, i, h]  # y1
+
+        interpolated_value = (weight_floor * val_floor) + (weight_ceil * val_ceil)  # y
+
+    return interpolated_value
+
+
+@njit()
+def get_GCF(row_rf_matrix, cutoff=2):  # cutoff usually between 0 and 3
+
+    fft_rf = fft(row_rf_matrix)
+
+    fftrf_min = fft_rf[:cutoff]
+
+    num = np.sum(np.abs(fftrf_min) ** 2)
+    den = np.sum(np.abs(fft_rf) ** 2)
+
+    gcf = num / den
+    return gcf
+
+
+@njit()
+def dynamic_DC_bias(gcf, beta, b):
+    """
+    Dynamic DC bias based on GCF value
+
+    Parameters:
+    -----------
+    param gcf: GCF value
+    param beta: β establishes the threshold range for distinguishing between high and low values of the GCF
+    param b: b is a small constant ranging between 0.1 and 0.2, which prevents the cDC value from approaching 0 when the denominator is extremely large
+
+    Returns:
+    -----------
+    return: Dynamic DC bias value
+    """
+    dc = 0
+
+    if 0 <= gcf < 0.5:
+        dc = 5 / (1 + np.exp(-40 * (gcf - beta)))
+    elif 0.5 <= gcf < 1:
+        dc = 5 / (1 + np.exp(-40 * (-gcf + 1 - beta))) + b
+    else:
+        raise ValueError(f"GCF value out of range. Expected 0 <= gcf < 1, got: {gcf}")
+
+    return dc
 
 
 @njit()
@@ -137,7 +250,7 @@ def apodization_wrapper(
             return np.ones(array_length)
 
 
-class Beamformer:
+class BeamformerGcfNsi:
     def __init__(
         self,
         nsi_dc_offset,
@@ -174,8 +287,8 @@ class Beamformer:
         self.angles = params["rf"]["angles"]
 
     @staticmethod
-    @njit(parallel=True)
-    def _beamforming_opt(
+    @njit(parallel=True, fastmath=True, cache=True)
+    def _GCF_NSI_beamforming_opt(
         rf,
         nx,
         nz,
@@ -191,7 +304,6 @@ class Beamformer:
         sampling_rate,
         aperture,
         apodization_function,
-        nsi_dc_offset,
         using_real_data,
         frames,
         bf_dtype,
@@ -203,6 +315,8 @@ class Beamformer:
         fixed_delay = delay0 / c
 
         bf = np.zeros((nz, nx, len(angles), frames), dtype=bf_dtype)
+        norm = np.zeros((nz, nx, len(angles), frames), dtype=np.float32)
+        delay_values = np.zeros((array_length, len(angles), frames), dtype=bf_dtype)
 
         cos_angles = [np.cos(angle * np.pi / 180) for angle in angles]
         sin_angles = [np.sin(angle * np.pi / 180) for angle in angles]
@@ -262,6 +376,29 @@ class Beamformer:
                         ) = find_object_effective_aperture(
                             position, depth, aperture, array_length, pitch
                         )
+
+                        # delay_values = np.zeros((array_length), dtype=rf.dtype)
+
+                        for l in range(array_length):
+                            delay_values[l, i, h] = delay_value(
+                                rf,
+                                depth,
+                                position,
+                                pitch,
+                                c,
+                                cos_angles,
+                                sin_angles,
+                                t0_delay,
+                                samples,
+                                sampling_rate,
+                                i,
+                                l,
+                                h,
+                            )
+
+                        gcf = get_GCF(row_rf_matrix=delay_values[:, i, h], cutoff=2)
+                        dc_value = dynamic_DC_bias(gcf, beta=0.2, b=0.1)
+
                         apodization = apodization_wrapper(
                             apodization_function,
                             first_transducer,
@@ -271,7 +408,7 @@ class Beamformer:
                             position,
                             0.5,
                             pitch,
-                            nsi_dc_offset,
+                            dc_value,
                         )
 
                         for l in range(
@@ -279,36 +416,25 @@ class Beamformer:
                             first_transducer + transducers_in_effective_array,
                         ):  # for transducers in effective array
 
-                            delay = (
-                                (depth * cos_angles[i] + position * sin_angles[i])
-                                + (np.sqrt(depth**2 + (l * pitch - position) ** 2))
-                            ) / c - t0_delay[
-                                i
-                            ]  # delay in s
+                            # interpolated_value = delay_value(
+                            #     rf,
+                            #     depth,
+                            #     position,
+                            #     pitch,
+                            #     c,
+                            #     cos_angles,
+                            #     sin_angles,
+                            #     t0_delay,
+                            #     samples,
+                            #     sampling_rate,
+                            #     i,
+                            #     l,
+                            #     h,
+                            # )
 
-                            exact_delay_idx_float = delay * sampling_rate
+                            bf[k, j, i, h] += delay_values[l, i, h] * apodization[l]
 
-                            # for better accuracr, lets apply linear interpolation on our delay values
-                            idx_floor = int(np.floor(exact_delay_idx_float))  # x0
-                            idx_ceil = idx_floor + 1  # x1
-
-                            if 0 <= idx_floor and idx_ceil < samples:
-
-                                weight_ceil = (
-                                    exact_delay_idx_float - idx_floor
-                                )  # wieght for y1
-                                weight_floor = (
-                                    idx_ceil - exact_delay_idx_float
-                                )  # weight for y0
-
-                                val_floor = rf[idx_floor, l, i, h]  # y0
-                                val_ceil = rf[idx_ceil, l, i, h]  # y1
-
-                                interpolated_value = (weight_floor * val_floor) + (
-                                    weight_ceil * val_ceil
-                                )  # y
-
-                                bf[k, j, i, h] += interpolated_value * apodization[l]
+                        norm[k, j, i, h] = dc_value
 
         if debug:
             print("-" * 60)
@@ -317,8 +443,8 @@ class Beamformer:
             print("=" * 60 + "\n")
         return bf
 
-    def beamforming(self, rf, frames, apodization_function):
-        return self._beamforming_opt(
+    def beamforming_GCF_NSI(self, rf, frames, apodization_function):
+        bf = self._GCF_NSI_beamforming_opt(
             rf,
             self.nx,
             self.nz,
@@ -334,10 +460,11 @@ class Beamformer:
             self.sampling_rate,
             self.aperture,
             apodization_function,
-            self.nsi_dc_offset,
             self.using_real_data,
             frames,
             self.bf_dtype,
             self.debug,
             self.angles,
         )
+
+        return bf
