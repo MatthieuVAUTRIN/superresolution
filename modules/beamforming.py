@@ -12,6 +12,7 @@ from scipy.signal import envelope, firwin, hilbert
 from scipy import fft
 from scipy.io import loadmat
 
+from modules.beamformers.GCF_NSI import GcfNSI
 from modules.handlers.bf_handler import BeamformerHandler
 from modules.handlers.multiprocessing import MultiprocessingHandler
 
@@ -81,6 +82,18 @@ class Beamforming(BeamformerHandler):
             self.samples_for_array_length,
             self.apodization_functions,
         ) = self._init_beamforming()
+
+        # GcfNSI.__init__(
+        #     self,
+        #     params=self.params,
+        #     nsi_dc_offset=nsi_dc_offset,
+        #     sampling_rate=self.sampling_rate,
+        #     samples=self.samples,
+        #     using_real_data=not self.using_simulation_data,
+        #     interpolate_data=self.interpolate_data,
+        #     bf_dtype=self.bf_dtype,
+        #     debug=self.debug,
+        # )
 
         BeamformerHandler.__init__(
             self,
@@ -220,11 +233,11 @@ class Beamforming(BeamformerHandler):
             for apo_func in self.apodization_functions:
                 if cuda:
                     rf_matrix = rf_matrix.copy()
-                    bf_apodized_matrix = self.beamforming_gpu(
+                    bf_apodized_matrix = self.beamformer_gpu.beamforming_gpu(
                         rf_matrix, actual_loaded_frames, apo_func
                     )
                 else:
-                    bf_apodized_matrix = self.beamforming(
+                    bf_apodized_matrix = self.beamformer_cpu.beamforming(
                         rf_matrix, actual_loaded_frames, apo_func
                     )
 

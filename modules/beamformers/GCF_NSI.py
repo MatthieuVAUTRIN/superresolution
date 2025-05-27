@@ -317,7 +317,7 @@ class GcfNSI:
         fixed_delay = delay0 / c
 
         bf = np.zeros((nz, nx, len(angles), frames), dtype=bf_dtype)
-        norm = np.zeros((nz, nx, len(angles), frames), dtype=np.float32)
+        norm = np.zeros((nz, nx, len(angles), frames), dtype=bf_dtype)
         delay_values = np.zeros((array_length, len(angles), frames), dtype=bf_dtype)
 
         cos_angles = [np.cos(angle * np.pi / 180) for angle in angles]
@@ -427,7 +427,7 @@ class GcfNSI:
             print(f"✓ BEAMFORMING COMPLETE")
             print(f"  • Output shape: ", bf.shape)
             print("=" * 60 + "\n")
-        return bf
+        return bf / norm
 
     def beamforming(self, rf, frames, apodization_function):
         bf = self._GCF_NSI_beamforming(

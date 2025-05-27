@@ -40,15 +40,15 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             "gcf_nsi": self._init_gcf_nsi,
         }
 
-        init_method = switcher.get(
+        init_function = switcher.get(
             beamformer_type, lambda: "Invalid beamformer type"
         )  # setting default to a lambda function to match the callable type
 
         #! create wrapper later if needed bevause of paramters discrepancies
-        if callable(init_method):
-            self.nsi_apo_required = init_method()
+        if callable(init_function) != None:
+            self.beamformer_cpu, self.beamformer_gpu = init_function()
         else:
-            raise ValueError(init_method)
+            raise ValueError(init_function)
 
     @staticmethod
     def is_NSI(beamformer_type):
@@ -56,8 +56,7 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
 
     def _init_das(self):
         print("Initializing DAS beamformer - CPU and GPU available")
-        Das.__init__(
-            self,
+        das_cpu = Das(
             params=self.params,
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
@@ -68,8 +67,7 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             debug=self.debug,
         )
 
-        DasGPU.__init__(
-            self,
+        das_gpu = DasGPU(
             params=self.params,
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
@@ -79,12 +77,11 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             bf_dtype=self.bf_dtype,
             debug=self.debug,
         )
-        return False
+        return das_cpu, das_gpu
 
     def _init_nsi(self):
         print("Initializing NSI beamformer - CPU and GPU available")
-        Das.__init__(
-            self,
+        nsi_cpu = Das(
             params=self.params,
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
@@ -95,8 +92,7 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             debug=self.debug,
         )
 
-        DasGPU.__init__(
-            self,
+        nsi_gpu = DasGPU(
             params=self.params,
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
@@ -106,12 +102,11 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             bf_dtype=self.bf_dtype,
             debug=self.debug,
         )
-        return True
+        return nsi_cpu, nsi_gpu
 
     def _init_dmas(self):
         print("Initializing DMAS beamformer - CPU available")
-        Dmas.__init__(
-            self,
+        dmas_cpu = Dmas(
             params=self.params,
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
@@ -121,34 +116,32 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             bf_dtype=self.bf_dtype,
             debug=self.debug,
         )
-        return False
+        return dmas_cpu, None
 
     def _init_gdmas(self):
         print("Initializing gDMAS beamformer - CPU available")
-        gDMAS.__init__(
-            self,
+        gdmas_cpu = gDMAS(
             params=self.params,
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
-            using_real_data=self.using_simulation_data,
+            using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
             debug=self.debug,
         )
-        return False
+        return gdmas_cpu, None
 
     def _init_gcf_nsi(self):
         print("Initializing GCF_NSI beamformer - CPU available")
-        GcfNSI.__init__(
-            self,
+        gcfnsi_cpu = GcfNSI(
             params=self.params,
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
-            using_real_data=self.using_simulation_data,
+            using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
             debug=self.debug,
         )
-        return True
+        return gcfnsi_cpu, None
