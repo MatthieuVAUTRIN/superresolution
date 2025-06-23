@@ -102,6 +102,8 @@ class Beamforming(BeamformerHandler):
             nsi_dc_offset=nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
+            nx=self.samples_for_array_length,
+            nz=self.samples_for_acquisition_depth,
             using_real_data=not self.using_simulation_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,

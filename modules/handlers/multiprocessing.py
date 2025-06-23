@@ -139,6 +139,7 @@ class MultiprocessingHandler:
         if using_simulation_data:
 
             rf_matrix = np.load(rf_matrix_path)
+            rf_matrix = np.float32(rf_matrix)
 
             if rf_matrix.ndim == 3:
                 rf_matrix = rf_matrix[:, :, :, np.newaxis]

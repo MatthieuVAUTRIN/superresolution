@@ -257,14 +257,16 @@ class GcfNSI:
         params,
         sampling_rate,
         samples,
+        nx,
+        nz,
         using_real_data,
         interpolate_data,
         bf_dtype,
         debug,
     ):
         self.nsi_dc_offset = nsi_dc_offset
-        self.nx = params["image"]["nx"]
-        self.nz = params["image"]["nz"]
+        self.nx = nx
+        self.nz = nz
         self.dx = params["image"]["dx"]
         self.dz = params["image"]["dz"]
         self.x0 = params["image"]["x0"]
@@ -316,9 +318,9 @@ class GcfNSI:
         # var initrt
         fixed_delay = delay0 / c
 
-        bf = np.zeros((nz, nx, len(angles), frames), dtype=bf_dtype)
-        norm = np.zeros((nz, nx, len(angles), frames), dtype=bf_dtype)
-        delay_values = np.zeros((array_length, len(angles), frames), dtype=bf_dtype)
+        bf = np.zeros((nz, nx, 1, frames), dtype=bf_dtype)
+        norm = np.zeros((nz, nx, 1, frames), dtype=bf_dtype)
+        delay_values = np.zeros((array_length), dtype=bf_dtype)
 
         cos_angles = [np.cos(angle * np.pi / 180) for angle in angles]
         sin_angles = [np.sin(angle * np.pi / 180) for angle in angles]
@@ -354,35 +356,35 @@ class GcfNSI:
             if debug:
                 print(f"  ↳ Processing frame", h + 1, f"[{h+1}/{frames}]")
 
-            for i in range(0, len(angles)):  # for each angle
-                if debug:
-                    print(
-                        f"    ↳ Processing angle",
-                        angles[i],
-                        "°",
-                        f"[{i+1}/{len(angles)}]",
+            for i in range(0, nx):  # for each lateral res sample
+
+                for j in range(0, nz):  # for vertical res sample
+
+                    delay_values[:] = 0  # reset delay values for each frame
+
+                    # account for intial depth / same goes for x0
+                    depth = dz * j + z0
+                    position = dx * i + x0
+
+                    (
+                        effective_array_length,
+                        transducers_in_effective_array,
+                        first_transducer,
+                    ) = find_object_effective_aperture(
+                        position, depth, aperture, array_length, pitch
                     )
 
-                for j in range(0, nx):  # for each lateral res sample
-
-                    for k in range(0, nz):  # for vertical res sample
-
-                        # account for intial depth / same goes for x0
-                        depth = dz * k + z0
-                        position = dx * j + x0
-
-                        (
-                            effective_array_length,
-                            transducers_in_effective_array,
-                            first_transducer,
-                        ) = find_object_effective_aperture(
-                            position, depth, aperture, array_length, pitch
-                        )
-
-                        # delay_values = np.zeros((array_length), dtype=rf.dtype)
+                    for k in range(0, len(angles)):  # for each angle
+                        if debug:
+                            print(
+                                f"    ↳ Processing angle",
+                                angles[k],
+                                "°",
+                                f"[{k+1}/{len(angles)}]",
+                            )
 
                         for l in range(array_length):
-                            delay_values[l, i, h] = delay_value(
+                            delay_values[l] += delay_value(
                                 rf,
                                 depth,
                                 position,
@@ -393,34 +395,34 @@ class GcfNSI:
                                 t0_delay,
                                 samples,
                                 sampling_rate,
-                                i,
+                                k,
                                 l,
                                 h,
                             )
 
-                        gcf = get_GCF(row_rf_matrix=delay_values[:, i, h], cutoff=2)
-                        dc_value = dynamic_DC_bias(gcf, beta=0.2, b=0.1)
+                    gcf = get_GCF(row_rf_matrix=delay_values, cutoff=2)
+                    dc_value = dynamic_DC_bias(gcf, beta=0.2, b=0.1)
 
-                        apodization = apodization_wrapper(
-                            apodization_function,
-                            first_transducer,
-                            transducers_in_effective_array,
-                            effective_array_length,
-                            array_length,
-                            position,
-                            0.5,
-                            pitch,
-                            dc_value,
-                        )
+                    apodization = apodization_wrapper(
+                        apodization_function,
+                        first_transducer,
+                        transducers_in_effective_array,
+                        effective_array_length,
+                        array_length,
+                        position,
+                        0.5,
+                        pitch,
+                        dc_value,
+                    )
 
-                        for l in range(
-                            first_transducer,
-                            first_transducer + transducers_in_effective_array,
-                        ):  # for transducers in effective array
+                    for l in range(
+                        first_transducer,
+                        first_transducer + transducers_in_effective_array,
+                    ):  # for transducers in effective array
 
-                            bf[k, j, i, h] += delay_values[l, i, h] * apodization[l]
+                        bf[j, i, 0, h] += delay_values[l] * apodization[l]
 
-                        norm[k, j, i, h] = dc_value
+                    norm[j, i, 0, h] = dc_value
 
         if debug:
             print("-" * 60)

@@ -84,6 +84,41 @@ def generate_rectangle_apodization(
 
 
 @njit()
+def generate_hamming_apodization(
+    current_position,
+    effective_array_length,
+    array_length,
+    amount_kept,
+    pitch,
+    offset=0,
+):
+    result = np.zeros(array_length) + offset
+    half_array = effective_array_length / 2
+    amount_trimmed = (1 - amount_kept) * half_array
+    eps = 1e-9  # to avoid division by zero
+
+    for transducer_idx in range(array_length):
+        position = transducer_idx * pitch
+        lower_bound = current_position - half_array + amount_trimmed
+        upper_bound = current_position + half_array - amount_trimmed
+
+        if lower_bound <= position <= upper_bound:
+            result[transducer_idx] = (
+                0.54
+                - 0.46
+                * np.cos(
+                    2
+                    * np.pi
+                    * (position - lower_bound)
+                    / ((upper_bound - lower_bound) + eps)
+                )
+            ) + offset
+        else:
+            result[transducer_idx] = 0 + offset
+    return result
+
+
+@njit()
 def apodization_wrapper(
     apodization_function,
     first_transducer,
@@ -131,6 +166,15 @@ def apodization_wrapper(
                 pitch,
                 offset=0,
             )
+        case "hamming":
+            return generate_hamming_apodization(
+                current_position,
+                effective_array_length,
+                array_length,
+                amount_kept,
+                pitch,
+                offset=0,
+            )
         case "":
             return np.ones(array_length)
         case _:
@@ -144,6 +188,8 @@ class Das:
         params,
         sampling_rate,
         samples,
+        nx,
+        nz,
         using_real_data,
         interpolate_data,
         bf_dtype,
@@ -151,8 +197,8 @@ class Das:
     ):
 
         self.nsi_dc_offset = nsi_dc_offset
-        self.nx = params["image"]["nx"]
-        self.nz = params["image"]["nz"]
+        self.nx = nx
+        self.nz = nz
         self.dx = params["image"]["dx"]
         self.dz = params["image"]["dz"]
         self.x0 = params["image"]["x0"]
@@ -220,11 +266,27 @@ class Das:
             min_t0_delay = min(t0_delay)
             # t0_delay = [t0_delay[i] - min_t0_delay for i in range(len(t0_delay))]
 
+        scaled_dx = (
+            array_length * pitch
+        ) / nx  #! works for data with x0 = 0 otherwise we need to calculate the actual
+        scaled_dz = (
+            samples / sampling_rate * c / 2
+        ) / nz  #! dstance to image xmax - xmin
+
+        # Maximum imaging depth
+
+        # scaled_dz = dz * nz / samples
+
         if debug:
             print("\n" + "=" * 60)
             print(f"✓ BEAMFORMING CONFIGURATION:")
             print(f"  • Resolution: {nx} x {nz}")
-            print(f"  • Acquisition depth:", 2, "m", f"({nz} samples)")
+            print(
+                f"  • Acquisition depth:",
+                (samples / sampling_rate * c / 2),
+                "m",
+                f"({nz} samples)",
+            )
             print(f"  • Fixed delay:", fixed_delay, "s", delay0, "m")
             print(f"  • Delays: ", t0_delay, " - Min delay: ", min_t0_delay, "s")
             print(
@@ -233,6 +295,7 @@ class Das:
                 "m",
                 f"({nx} samples)",
             )
+            print(f"  • Scaled dx:", scaled_dx, "m, scaled dz:", scaled_dz, "m")
             print(f"  • Apodization: {apodization_function}")
             print(f"  • Processing {len(angles)} angle(s)")
             print("-" * 60)
@@ -255,8 +318,8 @@ class Das:
                     for k in range(0, nz):  # for vertical res sample
 
                         # account for intial depth / same goes for x0
-                        depth = dz * k + z0
-                        position = dx * j + x0
+                        depth = scaled_dz * k + z0
+                        position = scaled_dx * j + x0
 
                         (
                             effective_array_length,

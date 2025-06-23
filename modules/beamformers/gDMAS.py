@@ -208,14 +208,16 @@ class gDMAS:
         params,
         sampling_rate,
         samples,
+        nx,
+        nz,
         using_real_data,
         interpolate_data,
         bf_dtype,
         debug,
     ):
         self.nsi_dc_offset = nsi_dc_offset
-        self.nx = params["image"]["nx"]
-        self.nz = params["image"]["nz"]
+        self.nx = nx
+        self.nz = nz
         self.dx = params["image"]["dx"]
         self.dz = params["image"]["dz"]
         self.x0 = params["image"]["x0"]

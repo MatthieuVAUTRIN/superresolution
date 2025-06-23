@@ -12,6 +12,8 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
         params,
         sampling_rate,
         samples,
+        nx,
+        nz,
         using_real_data,
         interpolate_data,
         nsi_dc_offset,
@@ -25,6 +27,9 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
 
         self.sampling_rate = sampling_rate
         self.samples = samples
+
+        self.nx = nx
+        self.nz = nz
 
         self.using_real_data = using_real_data
         self.interpolate_data = interpolate_data
@@ -61,6 +66,8 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
+            nx=self.nx,
+            nz=self.nz,
             using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
@@ -72,6 +79,8 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
+            nx=self.nx,
+            nz=self.nz,
             using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
@@ -86,6 +95,8 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
+            nx=self.nx,
+            nz=self.nz,
             using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
@@ -97,6 +108,8 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
+            nx=self.nx,
+            nz=self.nz,
             using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
@@ -111,6 +124,8 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
+            nx=self.nx,
+            nz=self.nz,
             using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
@@ -125,6 +140,8 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
+            nx=self.nx,
+            nz=self.nz,
             using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
@@ -139,6 +156,8 @@ class BeamformerHandler(Das, DasGPU, Dmas, gDMAS, GcfNSI):
             nsi_dc_offset=self.nsi_dc_offset,
             sampling_rate=self.sampling_rate,
             samples=self.samples,
+            nx=self.nx,
+            nz=self.nz,
             using_real_data=self.using_real_data,
             interpolate_data=self.interpolate_data,
             bf_dtype=self.bf_dtype,
