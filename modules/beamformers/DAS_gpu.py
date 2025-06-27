@@ -92,6 +92,48 @@ def generate_rectangle_apodization(
 
 
 @cuda.jit(device=True)
+def generate_hamming_apodization(
+    apo_func,
+    current_position,
+    effective_array_length,
+    array_length,
+    amount_kept,
+    pitch,
+    offset=0,
+):
+    # result = cuda.local.array(array_length, dtype=float32)
+
+    for i in range(array_length):
+        apo_func[i] = offset
+
+    half_array = effective_array_length / 2
+    amount_trimmed = (1 - amount_kept) * half_array
+    eps = 1e-9
+
+    for transducer_idx in range(array_length):
+
+        position = transducer_idx * pitch
+        lower_bound = current_position - half_array + amount_trimmed
+        upper_bound = current_position + half_array - amount_trimmed
+
+        if lower_bound <= position <= upper_bound:
+
+            apo_func[transducer_idx] = (
+                0.54
+                - 0.46
+                * np.cos(
+                    2
+                    * np.pi
+                    * (position - lower_bound)
+                    / ((upper_bound - lower_bound) + eps)
+                )
+            ) + offset
+
+        else:
+            apo_func[transducer_idx] = 0 + offset
+
+
+@cuda.jit(device=True)
 def apodization_wrapper(
     apo_func,
     apo_name,
@@ -134,6 +176,16 @@ def apodization_wrapper(
         )
     elif apo_name == 949:
         generate_rectangle_apodization(
+            apo_func,
+            current_position,
+            effective_array_length,
+            array_length,
+            amount_kept,
+            pitch,
+            0,
+        )
+    elif apo_name == 737:
+        generate_hamming_apodization(
             apo_func,
             current_position,
             effective_array_length,
@@ -301,7 +353,9 @@ class DasGPU:
     def beamforming_gpu(self, rf, frames, apodization_function):
 
         apo_int = [ord(c.lower()) for c in apodization_function]
-        apo_int = np.int16(np.sum(apo_int))
+        apo_int = np.int16(
+            np.sum(apo_int)
+        )  # sum of ascii values because cuda does not support strings
 
         bf = np.zeros((self.nz, self.nx, len(self.angles), frames), dtype=self.bf_dtype)
 

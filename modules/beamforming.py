@@ -113,7 +113,9 @@ class Beamforming(BeamformerHandler):
     def __get_samples_depth_lateral_resolution(
         self, acq_depth, array_len, pitch, dx, dz
     ):
-        samples_for_acquisition_depth = int(acq_depth / dz)
+        samples_for_acquisition_depth = int(
+            acq_depth / dz
+        )  #! modification here, we /2 because round-trip
         samples_for_array_length = int(array_len * pitch / dx)
 
         return samples_for_acquisition_depth, samples_for_array_length
@@ -151,7 +153,9 @@ class Beamforming(BeamformerHandler):
 
         samples_for_acquisition_depth, samples_for_array_length = (
             self.__get_samples_depth_lateral_resolution(
-                self.params["array"]["acq_depth"][1],
+                # self.params["array"]["acq_depth"][1],
+                self.params["array"]["acq_depth"][1]
+                - self.params["array"]["acq_depth"][0],
                 self.params["array"]["length"],
                 self.params["array"]["pitch"],
                 self.params["image"]["dx"],
