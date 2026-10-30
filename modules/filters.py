@@ -107,6 +107,7 @@ def get_noise_profile(bf):
 
 def filter_hp_svd(bf, fsam, f, nelim):
     bff = filter_hp(bf, fsam, f, 0)
+    # bff = filter_hp(bf, fsam, f, 0, 20000000)
     bff, S = filter_svd(bff, nelim)
     return bff, S
 
